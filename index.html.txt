@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>生日祝福抽卡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+
+        /* 主页面样式 */
+        .main-page {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            background-color: #ffebf0;
+            position: relative;
+            overflow: hidden;
+        }
+        .main-title {
+            font-size: 2.5rem;
+            color: #ff4081;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+            position: relative;
+            z-index: 2;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        .enter-btn {
+            background-color: #ff80ab;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(255, 64, 129, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+        .enter-btn:hover {
+            background-color: #ff4081;
+            transform: scale(1.05);
+        }
+
+        /* 烟花粒子（主页面） */
+        .particle {
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            opacity: 0.8;
+            bottom: -20px;
+            z-index: 1;
+        }
+        @keyframes float {
+            0% { transform: translateY(0) scale(1); opacity: 0.8; }
+            100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+
+        /* 次页面（星空主题+底部牌堆） */
+        .card-page {
+            display: none;
+            background: linear-gradient(#050a1f, #1a2950);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 星空特效 */
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .meteor {
+            position: absolute;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 100%);
+            transform-origin: right center;
+            animation: meteor 2s linear infinite;
+        }
+        @keyframes meteor {
+            0% { transform: translateX(0) rotate(-45deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(-100vw) rotate(-45deg); opacity: 0; }
+        }
+
+        /* 底部居中牌堆 */
+        .card-stack {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: -40px;
+            position: relative;
+        }
+        .card {
+            width: 80px;
+            height: 120px;
+            perspective: 1000px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin: 0 8px;
+            position: relative;
+            z-index: 1;
+            transform-origin: bottom;
+        }
+        /* 卡牌选中时的发光效果（边缘发光，与卡牌同大） */
+        .card.selected {
+            animation: glow 0.5s ease-out;
+        }
+        @keyframes glow {
+            0% { 
+                box-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px #ff80ab, 0 0 20px #ff80ab;
+                transform: scale(1);
+            }
+            100% { 
+                box-shadow: none;
+            }
+        }
+        .card-row > div:nth-child(2) { transform: translateX(12px); z-index: 2; }
+        .card-row > div:nth-child(3) { transform: translateX(24px); z-index: 3; }
+        .card-row > div:nth-child(4) { transform: translateX(36px); z-index: 4; }
+
+        /* 卡牌样式（带爱心装饰） */
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .card-back {
+            background: linear-gradient(135deg, #333, #000);
+            color: #fff;
+            border: 2px solid #444;
+        }
+        .card-front {
+            background: linear-gradient(135deg, #fff, #f8f8f8);
+            color: #333;
+            transform: rotateY(180deg);
+            font-size: 0.8rem;
+        }
+        .heart {
+            color: #ff4081;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        /* 选中卡牌的展示区（中间位置，保持原尺寸） */
+        .card-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 80px; /* 与原卡牌同尺寸 */
+            height: 120px;
+            perspective: 1000px;
+            z-index: 999;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card-display.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1); /* 不放大，保持原尺寸 */
+        }
+    </style>
+</head>
+<body>
+    <!-- 主页面 -->
+    <div class="main-page" id="mainPage">
+        <h1 class="main-title">XXX生日快乐</h1>
+        <button class="enter-btn" id="enterBtn">进入抽卡</button>
+    </div>
+
+    <!-- 次页面（抽卡界面） -->
+    <div class="card-page" id="cardPage">
+        <div class="card-display" id="cardDisplay"></div>
+        <div class="card-stack" id="cardStack">
+            <!-- 卡牌通过JS动态生成 -->
+        </div>
+    </div>
+
+    <script>
+        // 主页面烟花粒子
+        function createFireworks() {
+            const colors = ['#ff4081', '#8000ff', '#00bfff', '#ffd700', '#32cd32'];
+            const count = 15;
+            const mainPage = document.getElementById('mainPage');
+            
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animation = `float ${5 + Math.random() * 5}s linear infinite`;
+                mainPage.appendChild(particle);
+                
+                setTimeout(() => {
+                    mainPage.removeChild(particle);
+                    createParticle();
+                }, (5 + Math.random() * 5) * 1000);
+            }
+            
+            for (let i = 0; i < count; i++) createParticle();
+        }
+
+        // 星空背景
+        function createStarrySky() {
+            const cardPage = document.getElementById('cardPage');
+            // 星星
+            for (let i = 0; i < 150; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = `${Math.random() * 2 + 1}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDelay = `${Math.random() * 3}s`;
+                cardPage.appendChild(star);
+            }
+            // 流星
+            function createMeteor() {
+                const meteor = document.createElement('div');
+                meteor.className = 'meteor';
+                meteor.style.width = `${Math.random() * 100 + 50}px`;
+                meteor.style.height = '2px';
+                meteor.style.top = `${Math.random() * 30 + 10}vh`;
+                meteor.style.right = '-150px';
+                meteor.style.animationDelay = `${Math.random() * 5 + 2}s`;
+                cardPage.appendChild(meteor);
+                setTimeout(() => {
+                    cardPage.removeChild(meteor);
+                    createMeteor();
+                }, 10000);
+            }
+            for (let i = 0; i < 3; i++) createMeteor();
+        }
+
+        // 祝福内容（带爱心装饰）
+        const cardContents = [
+            `<span class="heart">❤</span>愿你岁岁常欢愉，年年皆胜意`,
+            `<span class="heart">❤</span>生日快乐，万事顺遂`,
+            `<span class="heart">❤</span>新的一岁，光芒万丈`,
+            `<span class="heart">❤</span>所愿皆成真，所行皆坦途`,
+            `<span class="heart">❤</span>生日快乐，平安喜乐`,
+            `<span class="heart">❤</span>岁岁有今朝，年年乐逍遥`,
+            `<span class="heart">❤</span>生日快乐，前程似锦`,
+            `<span class="heart">❤</span>新岁启封，美好常在`,
+            `<span class="heart">❤</span>愿你笑口常开，好运常伴`,
+            `<span class="heart">❤</span>生日快乐，幸福安康`,
+            `<span class="heart">❤</span>每一岁都奔走在热爱里`,
+            `<span class="heart">❤</span>生日快乐，如你所愿`,
+            `<span class="heart">❤</span>新的一岁，继续闪闪发光`,
+            `<span class="heart">❤</span>生日快乐，心想事成`,
+            `<span class="heart">❤</span>愿你被世界温柔以待`,
+            `<span class="heart">❤</span>生日快乐，天天开心`,
+            `<span class="heart">❤</span>岁岁平安，年年快乐`,
+            `<span class="heart">❤</span>生日快乐，美梦成真`,
+            `<span class="heart">❤</span>新的一岁，一切顺利`,
+            `<span class="heart">❤</span>生日快乐，永远年轻`
+        ];
+
+        // 页面初始化
+        window.onload = () => {
+            createFireworks();
+            createStarrySky();
+        };
+
+        // 切换到抽卡页面
+        document.getElementById('enterBtn').addEventListener('click', () => {
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('cardPage').style.display = 'block';
+            createCardStack();
+        });
+
+        // 创建底部牌堆
+        function createCardStack() {
+            const cardStack = document.getElementById('cardStack');
+            cardStack.innerHTML = '';
+            const shuffled = [...cardContents].sort(() => Math.random() - 0.5);
+            let activeCard = null;
+            let timer = null;
+
+            // 5行x4列布局
+            for (let r = 0; r < 5; r++) {
+                const row = document.createElement('div');
+                row.className = 'card-row';
+                row.style.zIndex = 5 - r;
+                
+                for (let c = 0; c < 4; c++) {
+                    const index = r * 4 + c;
+                    if (index >= shuffled.length) break; // 防止数组越界
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-inner">
+                            <div class="card-front">${shuffled[index]}</div>
+                            <div class="card-back">祝福卡</div>
+                        </div>
+                    `;
+
+                    // 抽卡逻辑：点击后卡牌边缘发光（与卡牌同大），然后移动到中间展示
+                    card.addEventListener('click', () => {
+                        // 重置上一张
+                        if (activeCard) {
+                            document.getElementById('cardDisplay').classList.remove('active');
+                            clearTimeout(timer);
+                        }
+
+                        // 卡牌边缘发光（动画时长0.5s，仅边缘发光且范围与卡牌一致）
+                        card.classList.add('selected');
+                        setTimeout(() => card.classList.remove('selected'), 500);
+
+                        // 克隆卡牌到中间展示区（保持原尺寸）
+                        const displayCard = document.createElement('div');
+                        displayCard.className = 'card flipped';
+                        displayCard.innerHTML = card.innerHTML;
+                        const cardDisplay = document.getElementById('cardDisplay');
+                        cardDisplay.innerHTML = '';
+                        cardDisplay.appendChild(displayCard);
+                        
+                        // 显示中间卡牌
+                        cardDisplay.classList.add('active');
+
+                        activeCard = displayCard;
+                        // 5秒后收回
+                        timer = setTimeout(() => {
+                            cardDisplay.classList.remove('active');
+                            activeCard = null;
+                        }, 5000);
+                    });
+
+                    row.appendChild(card);
+                }
+                cardStack.appendChild(row);
+            }
+        }
+    </script>
+</body>
+</html>
